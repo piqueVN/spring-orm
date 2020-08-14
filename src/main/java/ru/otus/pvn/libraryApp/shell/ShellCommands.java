@@ -1,69 +1,139 @@
 package ru.otus.pvn.libraryApp.shell;
 
-
 import org.h2.tools.Console;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
-import ru.otus.pvn.libraryApp.dao.Book;
+import ru.otus.pvn.libraryApp.dao.AuthorDaoJdbc;
 import ru.otus.pvn.libraryApp.dao.BookDaoJdbc;
+import ru.otus.pvn.libraryApp.dao.GenreDaoJdbc;
+import ru.otus.pvn.libraryApp.dao.LiteraryProductionDaoJdbc;
+import ru.otus.pvn.libraryApp.models.Author;
+import ru.otus.pvn.libraryApp.models.Book;
+import ru.otus.pvn.libraryApp.models.Genre;
+import ru.otus.pvn.libraryApp.models.LiteraryProduction;
 
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 @ShellComponent
 public class ShellCommands {
 
-    private final BookDaoJdbc jdbc;
+    private final AuthorDaoJdbc jdbcAuthor;
+    private final LiteraryProductionDaoJdbc jdbcAuthorLiterary;
+    private final GenreDaoJdbc jdbcGenreDao;
+    private final BookDaoJdbc jdbcBookDao;
 
-    public ShellCommands(BookDaoJdbc jdbc) {
-        this.jdbc = jdbc;
+    public ShellCommands(AuthorDaoJdbc jdbcAuthor, LiteraryProductionDaoJdbc jdbcAuthorLiterary, GenreDaoJdbc jdbcGenreDao, BookDaoJdbc jdbcBookDao) {
+        this.jdbcAuthor = jdbcAuthor;
+        this.jdbcAuthorLiterary = jdbcAuthorLiterary;
+        this.jdbcGenreDao = jdbcGenreDao;
+        this.jdbcBookDao = jdbcBookDao;
     }
 
-    @ShellMethod(value="run H2 console", key = {"console"})
+    @ShellMethod(value = "run H2 console", key = {"console"})
     public String runConsoleH2() throws SQLException {
         Console.main();
         return "Консоль H2 запущена";
     }
 
-    @ShellMethod(value="add Book to DB", key = {"add-book"})
-    public String createBook(@ShellOption String bookName,
-                             @ShellOption String createDate,
-                             @ShellOption String authorId,
-                             @ShellOption String genreId,
-                             @ShellOption String publishingId) throws SQLException {
-        Book book = new Book(bookName,
-                            createDate,
-                            Integer.valueOf(authorId),
-                            Integer.valueOf(genreId),
-                            Integer.valueOf(publishingId));
-        jdbc.insert(book);
-        return String.format("Книга %s добавлена", bookName);
+    @ShellMethod(value = "add Author to DB", key = {"add-author"})
+    public String addAuthor(@ShellOption String fio,
+                            @ShellOption String birthday,
+                            @ShellOption String dayOfDeath) throws SQLException, ParseException {
+        DateFormat format = new SimpleDateFormat("yyyy-mm-dd", Locale.ENGLISH);
+        Author author = null;
+        author = new Author(fio, format.parse(birthday), format.parse(dayOfDeath));
+        jdbcAuthor.create(author);
+        return String.format("Автор %s добавлен", author);
     }
 
-    @ShellMethod(value="update Book in DB", key = {"update-book"})
-    public String updateBook(@ShellOption String id,
-                             @ShellOption String bookName,
-                             @ShellOption String createDate,
-                             @ShellOption String authorId,
-                             @ShellOption String genreId,
-                             @ShellOption String publishingId) throws SQLException {
-        Book book = new Book(bookName,
-                createDate,
-                Integer.valueOf(authorId),
-                Integer.valueOf(genreId),
-                Integer.valueOf(publishingId));
-        jdbc.update(id, book);
-        return String.format("Книга %s обновлена", bookName);
+    //Пользователь вводит имя произведения и список id авторов,
+    //в дальнейшем не сложно переделать что будет вводить ФИО
+    //Без фанатизма (с)
+    @ShellMethod(value = "add LiteraryProduction to DB", key = {"add-lp"})
+    public String addAuthor(@ShellOption String name,
+                            @ShellOption String author_id) throws SQLException, ParseException {
+        LiteraryProduction literaryProduction = new LiteraryProduction( name, new ArrayList<Author>());
+        for (String id : author_id.split("\\,")) {
+            literaryProduction.getAuthors().add(jdbcAuthor.getById(Long.parseLong(id)));
+        }
+        jdbcAuthorLiterary.create(literaryProduction);
+        return String.format("Произведение %s добавлено", name);
     }
 
-    @ShellMethod(value="delete Book in DB", key = {"delete-book"})
-    public String deleteBook(@ShellOption String id) throws SQLException {
-        jdbc.deleteById(id);
+    @ShellMethod(value = "add Genre to DB", key = {"add-genre"})
+    public String addAuthor(@ShellOption String name) throws SQLException {
+        Genre genre = new Genre(name);
+        jdbcGenreDao.create(genre);
+        return String.format("Жанр %s добавлен", name);
+    }
+
+    @ShellMethod(value = "delete book from DB", key = {"delete-book"})
+    public String deleteBook(@ShellOption long id) throws SQLException {
+        jdbcBookDao.deleteById(id);
         return String.format("Книга id=%s удалена", id);
     }
 
-    @ShellMethod(value="get Book by ID", key = {"get-book"})
-    public String getBookById(@ShellOption String id) throws SQLException {
-        return String.format("Книга %s получена", jdbc.getById(id).toString());
+    @ShellMethod(value = "get book from DB", key = {"get-book"})
+    public String getBook(@ShellOption long id) throws SQLException {
+        Book book = jdbcBookDao.getById(id);
+        return book.toString();
     }
+
+    //пользователь сможет добавить в новую книгу только ранее созданные произведения
+    //обеспечиваем защиту от плохих данных на будущее
+    @ShellMethod(value = "add book to DB", key = {"add-book"})
+    public String addBook(@ShellOption String name,
+                          @ShellOption String isbn,
+                          @ShellOption String literarysId,
+                          @ShellOption String genreId) throws SQLException {
+        Book book = new Book();
+        book.setName(name);
+        book.setIsbn(isbn);
+        List<LiteraryProduction> literaryProductions = new ArrayList<>();
+        for (String id : literarysId.split("\\,")) {
+            literaryProductions.add(jdbcAuthorLiterary.getById(Long.parseLong(id)));
+        }
+        book.setLiteraryProductions(literaryProductions);
+        book.setGenre(jdbcGenreDao.getById(Long.parseLong(genreId)));
+        jdbcBookDao.create(book);
+        return "Книга " + book.toString() + "добавлена!";
+    }
+
+    //пользователь сможет добавить в новую книгу только ранее созданные произведения
+    //обеспечиваем защиту от плохих данных на будущее
+    @ShellMethod(value = "update book in DB", key = {"update-book"})
+    public String updateBookById(@ShellOption String id,
+                                 @ShellOption String name,
+                                 @ShellOption String isbn,
+                                 @ShellOption String literarysId,
+                                 @ShellOption String genreId) throws SQLException {
+        Book book = jdbcBookDao.getById(Long.parseLong(id));
+        if (book != null) {
+            Book bookForUpdate = new Book();
+            bookForUpdate.setId(book.getId());
+            bookForUpdate.setName(name);
+            bookForUpdate.setIsbn(isbn);
+            List<LiteraryProduction> literaryProductions = new ArrayList<>();
+            for (String litId : literarysId.split("\\,")) {
+                literaryProductions.add(jdbcAuthorLiterary.getById(Long.parseLong(litId)));
+            }
+            bookForUpdate.setLiteraryProductions(literaryProductions);
+            bookForUpdate.setGenre(jdbcGenreDao.getById(Long.parseLong(genreId)));
+            jdbcBookDao.update(bookForUpdate);
+            return "Книга " + bookForUpdate.toString() + "обновлена!";
+        }
+        return "Книга " + book.toString() + "не найдена!";
+    }
+
+
+
 }
+
+
