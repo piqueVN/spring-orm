@@ -1,7 +1,6 @@
 package ru.otus.pvn.libraryApp.models;
 
 import lombok.*;
-import ru.otus.pvn.libraryApp.models.Author;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +9,10 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 public class Book {
+
+    @Getter
+    @Setter
+    private List<LiteraryProduction> literaryProductions;
 
     @Getter
     @Setter
@@ -25,24 +28,21 @@ public class Book {
 
     @Getter
     @Setter
-    private List<LiteraryProduction> literaryProductions;
-
-    @Getter
-    @Setter
     private Genre genre;
 
-
-    public Book(String name, String isbn, ArrayList<LiteraryProduction> literaryProductions, Genre genre) {
+    public Book(long id, String name, String isbn, Genre genre, List<LiteraryProduction> literaryProductions) {
+        this.id = id;
         this.name = name;
         this.isbn = isbn;
         this.literaryProductions = literaryProductions;
         this.genre = genre;
     }
 
+
     @Override
     public String toString() {
         return "Book{" +
-                "id=" + id +
+                "  id=" + id +
                 ", name='" + name + '\'' +
                 ", isbn='" + isbn + '\'' +
                 ", literaryProductions=" + literaryProductions +

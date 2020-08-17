@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Import;
 import ru.otus.pvn.libraryApp.dao.*;
 import ru.otus.pvn.libraryApp.models.Book;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Тест методов BookDaoJdbc")
@@ -29,25 +31,15 @@ public class BookDaoJdbcTests {
     void shouldGetBookFromDBById() {
         Book book = bookJdbc.getById(1);
         assertThat(book).hasFieldOrPropertyWithValue("name", "Сборник русских авторов");
-        assertThat(book.getLiteraryProductions()).hasSizeGreaterThanOrEqualTo(2);
-    }
-
-    @DisplayName("получить книгу по name")
-    @Test
-    void shouldGetBookFromDBByName() {
-        Book book = bookJdbc.getByName("Сборник русских авторов");
-        assertThat(book).hasFieldOrPropertyWithValue("name", "Сборник русских авторов");
-        assertThat(book.getLiteraryProductions()).hasSizeGreaterThanOrEqualTo(2);
     }
 
     @DisplayName("добавить книгу")
     @Test
     void shouldCreateBook() {
-        Book book = bookJdbc.getByName("Сборник русских авторов");
+        Book book = bookJdbc.getById(1);
         book.setName("Сборник типа русских авторов йоу!");
         bookJdbc.create(book);
-        assertThat(book).hasFieldOrPropertyWithValue("name", "Сборник типа русских авторов йоу!");
-        assertThat(book.getLiteraryProductions()).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(bookJdbc.getById(5)).hasFieldOrPropertyWithValue("name", "Сборник типа русских авторов йоу!");
     }
 
     @DisplayName("обновить книгу")
@@ -58,7 +50,6 @@ public class BookDaoJdbcTests {
         bookJdbc.update(book);
         book = bookJdbc.getById(2);
         assertThat(book).hasFieldOrPropertyWithValue("name", "Ужасы говнокода!");
-        assertThat(book.getLiteraryProductions()).hasSize(1);
     }
 
     @DisplayName("удалить книгу")
@@ -66,6 +57,13 @@ public class BookDaoJdbcTests {
     void shouldDeleteBook() {
         bookJdbc.deleteById(1);
         assertThat(bookJdbc.getById(1)).isNull();
+    }
+
+    @DisplayName("получить книги")
+    @Test
+    void shouldGetAllBook() {
+        List<Book> books = bookJdbc.getAll();
+        assertThat(books).hasSizeGreaterThanOrEqualTo(2);
     }
 
 

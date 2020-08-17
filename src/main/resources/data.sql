@@ -33,11 +33,16 @@ insert into GENRES (NAME) values ('Роман'); --1
 insert into GENRES (NAME) values ('Ужасы'); --2
 insert into GENRES (NAME) values ('Классика'); --3
 
-insert into BOOKS (ID, NAME, ISBN, LITERARY_ID, GENRE_ID)
-values (1, 'Сборник русских авторов', 'ISBN-00001', 1, 1);
+insert into BOOKS (NAME, ISBN, GENRE_ID)
+values ('Сборник русских авторов', 'ISBN-00001', 1);
 
-insert into BOOKS (ID, NAME, ISBN, LITERARY_ID, GENRE_ID)
-values (1,'Сборник русских авторов', 'ISBN-00001', 2, 1);
+insert into BOOKS (NAME, ISBN, GENRE_ID)
+values ('Лучшее Стивена Кинга', 'ISBN-00023', 2);
 
-insert into BOOKS (ID, NAME, ISBN, LITERARY_ID, GENRE_ID)
-values (2,'Лучшее Стивена Кинга', 'ISBN-00023', 3, 2);
+insert into LITERARY_IN_BOOKS (BOOK_ID, LITERARY_ID)
+values (1, 1);
+insert into LITERARY_IN_BOOKS (BOOK_ID, LITERARY_ID)
+values (1, 2);
+insert into LITERARY_IN_BOOKS (BOOK_ID, LITERARY_ID)
+values (2, 3);
+

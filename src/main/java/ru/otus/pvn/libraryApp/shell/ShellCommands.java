@@ -46,7 +46,7 @@ public class ShellCommands {
     public String addAuthor(@ShellOption String fio,
                             @ShellOption String birthday,
                             @ShellOption String dayOfDeath) throws SQLException, ParseException {
-        DateFormat format = new SimpleDateFormat("yyyy-mm-dd", Locale.ENGLISH);
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
         Author author = null;
         author = new Author(fio, format.parse(birthday), format.parse(dayOfDeath));
         jdbcAuthor.create(author);
@@ -60,7 +60,7 @@ public class ShellCommands {
     public String addAuthor(@ShellOption String name,
                             @ShellOption String author_id) throws SQLException, ParseException {
         LiteraryProduction literaryProduction = new LiteraryProduction( name, new ArrayList<Author>());
-        for (String id : author_id.split("\\,")) {
+        for (String id : author_id.split(",")) {
             literaryProduction.getAuthors().add(jdbcAuthor.getById(Long.parseLong(id)));
         }
         jdbcAuthorLiterary.create(literaryProduction);
@@ -86,54 +86,43 @@ public class ShellCommands {
         return book.toString();
     }
 
-    //пользователь сможет добавить в новую книгу только ранее созданные произведения
-    //обеспечиваем защиту от плохих данных на будущее
+
     @ShellMethod(value = "add book to DB", key = {"add-book"})
     public String addBook(@ShellOption String name,
                           @ShellOption String isbn,
-                          @ShellOption String literarysId,
+                          @ShellOption String literarysId, // вводить через запятую, например 1,2
                           @ShellOption String genreId) throws SQLException {
         Book book = new Book();
         book.setName(name);
         book.setIsbn(isbn);
+        book.setGenre(jdbcGenreDao.getById(Long.parseLong(genreId)));
         List<LiteraryProduction> literaryProductions = new ArrayList<>();
-        for (String id : literarysId.split("\\,")) {
+        for (String id : literarysId.split(",")) {
             literaryProductions.add(jdbcAuthorLiterary.getById(Long.parseLong(id)));
         }
         book.setLiteraryProductions(literaryProductions);
-        book.setGenre(jdbcGenreDao.getById(Long.parseLong(genreId)));
         jdbcBookDao.create(book);
         return "Книга " + book.toString() + "добавлена!";
     }
 
-    //пользователь сможет добавить в новую книгу только ранее созданные произведения
-    //обеспечиваем защиту от плохих данных на будущее
     @ShellMethod(value = "update book in DB", key = {"update-book"})
     public String updateBookById(@ShellOption String id,
                                  @ShellOption String name,
                                  @ShellOption String isbn,
-                                 @ShellOption String literarysId,
                                  @ShellOption String genreId) throws SQLException {
-        Book book = jdbcBookDao.getById(Long.parseLong(id));
-        if (book != null) {
+
             Book bookForUpdate = new Book();
-            bookForUpdate.setId(book.getId());
+            bookForUpdate.setId(Long.parseLong(id));
             bookForUpdate.setName(name);
             bookForUpdate.setIsbn(isbn);
-            List<LiteraryProduction> literaryProductions = new ArrayList<>();
-            for (String litId : literarysId.split("\\,")) {
-                literaryProductions.add(jdbcAuthorLiterary.getById(Long.parseLong(litId)));
-            }
-            bookForUpdate.setLiteraryProductions(literaryProductions);
             bookForUpdate.setGenre(jdbcGenreDao.getById(Long.parseLong(genreId)));
             jdbcBookDao.update(bookForUpdate);
             return "Книга " + bookForUpdate.toString() + "обновлена!";
         }
-        return "Книга " + book.toString() + "не найдена!";
     }
 
 
 
-}
+
 
 
