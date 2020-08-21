@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GenreDaoJdbcTests {
 
     @Autowired
-    GenreDaoJdbc jdbc;
+    private GenreDaoJdbc jdbc;
 
     @DisplayName("получает жанр по id")
     @Test

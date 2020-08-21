@@ -41,7 +41,7 @@ public class BookDaoJdbc implements BookDao {
 
     @Override
     public void create(Book book) {
-        List<Long> id = jdbc.query("SELECT LITERARY_PRODUCTIONS_SEQ.nextval nval",
+        List<Long> id = jdbc.query("SELECT LITERARY_SEQ.nextval nval",
                 (resultSet, i) -> resultSet.getLong("nval"));
         jdbc.update("insert into books (" +
                         " ID,\n" +
@@ -87,6 +87,7 @@ public class BookDaoJdbc implements BookDao {
 
     @Override
     public void deleteById(long id) {
+        jdbc.update("DELETE FROM LITERARY_IN_BOOKS WHERE BOOK_ID = :id", Map.of("id", id));
         jdbc.update("DELETE FROM books WHERE id = :id", Map.of("id", id));
     }
 

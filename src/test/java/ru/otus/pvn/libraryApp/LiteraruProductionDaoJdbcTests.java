@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LiteraruProductionDaoJdbcTests {
 
     @Autowired
-    LiteraryProductionDaoJdbc literaryJdbc;
+    private LiteraryProductionDaoJdbc literaryJdbc;
 
     @Autowired
-    AuthorDaoJdbc authorJdbc;
+    private AuthorDaoJdbc authorJdbc;
 
     @DisplayName("получить информацию по id литературного произведения")
     @Test
@@ -37,7 +37,7 @@ public class LiteraruProductionDaoJdbcTests {
     @DisplayName("добавить информацию по id литературного произведения")
     @Test
     void shouldCreateLiteraryProduction() throws SQLException {
-        List<Author> authors =  new ArrayList<Author>();
+        List<Author> authors = new ArrayList<>();
         authors.add(authorJdbc.getById(1));
         authors.add(authorJdbc.getById(2));
         LiteraryProduction literaryProduction = new LiteraryProduction("Приключения приклю", authors);

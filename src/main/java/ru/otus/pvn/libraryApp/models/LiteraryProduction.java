@@ -11,16 +11,10 @@ import java.util.List;
 @Data
 public class LiteraryProduction {
 
-    @Getter
-    @Setter
     private long id;
 
-    @Getter
-    @Setter
     private String name;
 
-    @Getter
-    @Setter
     private List<Author> authors;
 
     public LiteraryProduction(String name, List<Author> authors) {

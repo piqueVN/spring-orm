@@ -27,34 +27,42 @@ public class LiteraryProductionDaoJdbc implements LiteraryProductionDao {
 
     @Override
     public LiteraryProduction getById(long id) {
-        final Map<String,Object> params = new HashMap<>(1);
-        params.put("id", id);
-        return jdbc.query("SELECT * FROM AUTHORS_LITERARY_PRODUCTIONS WHERE ID = :id",
+        return jdbc.query("SELECT ail.AUTHOR_ID, \n" +
+                        "ail.LITERARY_ID,\n" +
+                        "FIO,\n" +
+                        "BIRTHDAY,\n" +
+                        "DATE_OF_DEATH,\n" +
+                        "NAME \n" +
+                        "FROM AUTHORS_IN_LITERARY ail\n" +
+                        "JOIN AUTHORS aut ON ail.author_id = aut.id\n" +
+                        "JOIN LITERARY lit ON ail.literary_id = lit.id\n" +
+                        "WHERE LITERARY_ID = :id",
                 Map.of("id", id),
                 new LiteraryProductionExtractor());
     }
 
     @Override
     public void create(LiteraryProduction literaryProduction) {
-        List<Long> id = jdbc.query("SELECT LITERARY_PRODUCTIONS_SEQ.nextval nval",
+        List<Long> id = jdbc.query("SELECT LITERARY_SEQ.nextval nval",
                 (resultSet, i) -> resultSet.getLong("nval"));
-        // у каждого произведения может быть несколько авторов
-        // реализуем отношение когда у одного произведения может быть несколько
-        // авторов (энциклопедии, совместно написанные романы итд)
-        for (Author author : literaryProduction.getAuthors()) {
-            jdbc.update("insert into AUTHORS_LITERARY_PRODUCTIONS (" +
+            jdbc.update("insert into LITERARY (" +
                             "    ID,\n" +
-                            "    NAME,\n" +
-                            "    AUTHOR_ID\n" +
+                            "    NAME\n" +
                             ")" +
                             "   values ( " +
                             "      :id,\n" +
-                            "      :name,\n" +
-                            "      :author_id\n" +
+                            "      :name\n" +
                             ")",
                     Map.of("id", id.get(0),
-                            "name", literaryProduction.getName(),
-                            "author_id", author.getId()));
+                            "name", literaryProduction.getName()));
+            for (Author author : literaryProduction.getAuthors()) {
+                jdbc.update("insert into AUTHORS_IN_LITERARY (" +
+                                "AUTHOR_ID,\n" +
+                                "LITERARY_ID)\n" +
+                                " values ( " +
+                                ":lpId,\n" +
+                                ":id)\n",
+                        Map.of("id", id.get(0), "lpId", author.getId()));
         }
     }
 
@@ -64,7 +72,7 @@ public class LiteraryProductionDaoJdbc implements LiteraryProductionDao {
             LiteraryProduction literaryProduction = null;
             while (resultSet.next()) {
                 if (literaryProduction == null) {
-                    literaryProduction = new LiteraryProduction(resultSet.getLong("id"),
+                    literaryProduction = new LiteraryProduction(resultSet.getLong("literary_id"),
                             resultSet.getString("name"),
                             new ArrayList<Author>());
                 }

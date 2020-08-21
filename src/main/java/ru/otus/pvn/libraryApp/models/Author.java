@@ -9,20 +9,13 @@ import java.util.Date;
 @NoArgsConstructor
 @Data
 public class Author {
-    @Getter
-    @Setter
+
     private long id;
 
-    @Getter
-    @Setter
     private String fio;
 
-    @Getter
-    @Setter
     private Date birthday;
 
-    @Getter
-    @Setter
     private Date dateOfDeath;
 
     @Override

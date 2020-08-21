@@ -18,13 +18,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BookDaoJdbcTests {
 
     @Autowired
-    LiteraryProductionDaoJdbc literaryJdbc;
+    private LiteraryProductionDaoJdbc literaryJdbc;
     @Autowired
-    AuthorDaoJdbc authorJdbc;
+    private AuthorDaoJdbc authorJdbc;
     @Autowired
-    BookDaoJdbc bookJdbc;
+    private BookDaoJdbc bookJdbc;
     @Autowired
-    GenreDaoJdbc genreJdbc;
+    private GenreDaoJdbc genreJdbc;
 
     @DisplayName("получить книгу по id")
     @Test
