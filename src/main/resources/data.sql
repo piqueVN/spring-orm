@@ -39,13 +39,11 @@ values ('Лучшее Стивена Кинга', 'ISBN-00023', 2);
 insert into AUTHORS_IN_LITERARY (AUTHOR_ID, LITERARY_ID)
 values (1, 1);
 insert into AUTHORS_IN_LITERARY (AUTHOR_ID, LITERARY_ID)
-values (2, 3);
+values (3, 2);
 insert into AUTHORS_IN_LITERARY (AUTHOR_ID, LITERARY_ID)
 values (2, 4);
 insert into AUTHORS_IN_LITERARY (AUTHOR_ID, LITERARY_ID)
-values (3, 2);
-insert into AUTHORS_IN_LITERARY (AUTHOR_ID, LITERARY_ID)
-values (3, 4);
+values (2, 3);
 
 insert into LITERARY_IN_BOOKS (BOOK_ID, LITERARY_ID)
 values (1, 1);

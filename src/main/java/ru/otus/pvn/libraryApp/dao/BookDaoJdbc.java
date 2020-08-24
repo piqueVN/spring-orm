@@ -4,7 +4,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.stereotype.Repository;
+import ru.otus.pvn.libraryApp.models.Author;
 import ru.otus.pvn.libraryApp.models.Book;
+import ru.otus.pvn.libraryApp.models.Genre;
 import ru.otus.pvn.libraryApp.models.LiteraryProduction;
 
 import java.sql.ResultSet;
@@ -19,22 +21,35 @@ import java.util.Map;
 public class BookDaoJdbc implements BookDao {
 
     private final NamedParameterJdbcOperations jdbc;
-    private final GenreDaoJdbc genreJdbc;
-    private final LiteraryProductionDaoJdbc literaryJdbc;
+
+    private final String  selectBooks = "SELECT bks.id book_id,\n" +
+            "                       bks.name book_name, \n" +
+            "                       bks.isbn book_isbn,\n" +
+            "                       gnrs.id genre_id, \n" +
+            "                       gnrs.name genre_name,\n" +
+            "                       lit.id literary_id, \n" +
+            "                       lit.name literary_name,\n" +
+            "                       aut.id author_id,\n" +
+            "                       aut.fio author_fio,\n" +
+            "                       aut.birthday author_birthday,\n" +
+            "                       aut.date_of_death author_date_of_death \n" +
+            "        FROM BOOKS bks\n" +
+            "        JOIN LITERARY_IN_BOOKS lib ON bks.id = lib.book_id\n" +
+            "        JOIN LITERARY lit ON lit.id = lib.literary_id\n" +
+            "        JOIN AUTHORS_IN_LITERARY ail ON ail.literary_id = lit.id\n" +
+            "        JOIN AUTHORS aut ON aut.id = ail.author_id\n" +
+            "        JOIN GENRES gnrs ON gnrs.id = bks.genre_id\n";
 
     public BookDaoJdbc(NamedParameterJdbcOperations jdbc, GenreDaoJdbc genreJdbc, LiteraryProductionDaoJdbc literaryJdbc) {
         this.jdbc = jdbc;
-        this.genreJdbc = genreJdbc;
-        this.literaryJdbc = literaryJdbc;
     }
 
     @Override
     public Book getById(long id) {
         final Map<String,Object> params = new HashMap<>(1);
         params.put("id", id);
-        return jdbc.query("SELECT * FROM LITERARY_IN_BOOKS lb\n" +
-                             "JOIN BOOKS bks ON bks.id = lb.book_id\n" +
-                             "WHERE id = :id",
+        return jdbc.query( selectBooks +
+                        "WHERE bks.id = :id",
                 Map.of("id", id),
                 new BookExtractor());
     }
@@ -88,60 +103,61 @@ public class BookDaoJdbc implements BookDao {
     @Override
     public void deleteById(long id) {
         jdbc.update("DELETE FROM LITERARY_IN_BOOKS WHERE BOOK_ID = :id", Map.of("id", id));
+        jdbc.update("DELETE FROM LITERARY_IN_BOOKS WHERE BOOK_ID = :id", Map.of("id", id));
         jdbc.update("DELETE FROM books WHERE id = :id", Map.of("id", id));
     }
 
     @Override
     public List<Book> getAll() {
-        return jdbc.query("SELECT * FROM LITERARY_IN_BOOKS lb\n" +
-                        "        JOIN BOOKS bks ON bks.id = lb.book_id\n" +
-                        "        ORDER BY ID",
-                new AllBookExtractor());
+        return jdbc.query(selectBooks+
+                " ORDER BY book_id, literary_id", new BooksExtractor());
     }
 
 
     private class BookExtractor implements ResultSetExtractor<Book> {
         @Override
         public Book extractData(ResultSet resultSet) throws SQLException, DataAccessException {
-            Book book = null;
+            List<Book> books = new BooksExtractor().extractData(resultSet);
+            if (books.isEmpty()) return null;
+                else return books.iterator().next();
+        }
+    }
+
+    private class BooksExtractor implements ResultSetExtractor<List<Book>> {
+        @Override
+        public List<Book> extractData(ResultSet resultSet) throws SQLException, DataAccessException {
+            Map<Long, Book> books = new HashMap<>();
+            Map<Long, LiteraryProduction> literaryProductions = new HashMap<>();
             while (resultSet.next()) {
+                Book book = books.get(resultSet.getLong("id"));
                 if (book == null) {
                     book = new Book(
                             resultSet.getLong("id"),
                             resultSet.getString("name"),
                             resultSet.getString("isbn"),
-                            genreJdbc.getById(resultSet.getLong("genre_id")),
+                            new Genre(resultSet.getLong("genre_id"), resultSet.getString("genre_name")),
                             new ArrayList<LiteraryProduction>());
-            }
-            book.getLiteraryProductions().add(literaryJdbc.getById(resultSet.getLong("literary_id")));
-        }
-            return book;
-        }
-    }
-
-    private class AllBookExtractor implements ResultSetExtractor<List<Book>> {
-        @Override
-        public List<Book> extractData(ResultSet resultSet) throws SQLException, DataAccessException {
-            List<Book> books = new ArrayList<>();
-            long id = 0;
-            long next_id;
-            Book book = null;
-            while (resultSet.next()) {
-                next_id = resultSet.getLong("id");
-                if (id != next_id) {
-                    if (id != 0) books.add(book);
-                    book = new Book(
-                            resultSet.getLong("id"),
-                            resultSet.getString("name"),
-                            resultSet.getString("isbn"),
-                            genreJdbc.getById(resultSet.getLong("genre_id")),
-                            new ArrayList<LiteraryProduction>());
+                    books.put(resultSet.getLong("id"), book);
+                    literaryProductions =  new HashMap<>();
                 }
-                    book.getLiteraryProductions().add(literaryJdbc.getById(resultSet.getLong("literary_id")));
-                    id = resultSet.getLong("id");
+                LiteraryProduction literaryProduction = literaryProductions.get(resultSet.getLong("literary_id"));
+                if (literaryProduction == null) {
+                    literaryProduction = new LiteraryProduction(
+                            resultSet.getLong("literary_id"),
+                            resultSet.getString("literary_name"),
+                            new ArrayList<Author>());
+                    literaryProductions.put(resultSet.getLong("literary_id"), literaryProduction);
+                }
+                literaryProduction.getAuthors().add(new Author(
+                        resultSet.getLong("author_id"),
+                        resultSet.getString("author_fio"),
+                        resultSet.getDate("author_birthday"),
+                        resultSet.getDate("author_date_of_death")));
+                book.getLiteraryProductions().add(literaryProduction);
+                books.replace(resultSet.getLong("id"), book);
             }
-            books.add(book);
-            return books;
+            return new ArrayList<>(books.values());
         }
     }
 }
+
